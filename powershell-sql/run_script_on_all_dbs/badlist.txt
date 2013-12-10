@@ -1,0 +1,6 @@
+master
+msdb
+model
+ReportServer
+ReportServerTempDB
+tempdb
