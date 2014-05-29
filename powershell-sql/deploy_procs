@@ -1,0 +1,54 @@
+Add-PSSnapin SqlServerCmdletSnapin100
+Add-PSSnapin SqlServerProviderSnapin100
+
+
+$serverlist = "serverlist.txt"
+$scriptlocation = "\\server\remotelocation.sql"
+$sql = "DECLARE @CurrentDB VARCHAR(MAX)
+if object_id('tempdb..#names') is not null drop table #names	
+		SELECT NAME
+		into #names
+		FROM sys.databases
+		WHERE NAME NOT IN (
+			'master'
+			,'tempdb'
+			,'model'
+			,'ReportServer'
+			,'ReportServerTempDB'
+			,'msdb'
+			)			
+		and state_desc = 'ONLINE'
+		and user_access_desc = 'MULTI_USER'
+			
+		while exists ( select * from #names )
+		BEGIN
+			SELECT @CurrentDB = (SELECT TOP 1 NAME from #names )
+			declare @sql nvarchar(max)
+            SET @sql = '
+			USE '+@CurrentDB+'
+				IF OBJECT_ID(''TableIdentity'') IS NOT NULL
+				BEGIN			 
+					SELECT @@SERVERNAME [server], db_name() [dbname]
+				END
+            '
+            EXEC (@SQL)
+
+			DELETE FROM #names WHERE NAME = @CurrentDB
+		END
+			
+		--IF OBJECT_ID('TableIdentity') IS NOT NULL BEGIN SELECT * FROM TableIdentity END ELSE BEGIN SELECT DB_NAME() END
+		"
+foreach ($server in $(gc $serverlist))
+{
+	write-debug "Invoke SQL Command running on $server"
+	$dataset = Invoke-Sqlcmd -ServerInstance $server -Database Master -Query $sql 
+	 
+	 foreach ($item in $dataset)
+		 {	
+			if ($item -ne $null) {
+			sqlcmd -S $item.server -d $item.dbname -i $scriptlocation -y 8000 }
+		 }
+}
+
+Remove-PSSnapin SqlServerCmdletSnapin100
+Remove-PSSnapin SqlServerProviderSnapin100
