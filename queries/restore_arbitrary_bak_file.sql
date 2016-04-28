@@ -29,7 +29,7 @@ IF(@backup_filepath <> 'CHANGE ME'
         SET @sql = 'CREATE DATABASE '+QUOTENAME(@file_location_test_db_name);
         EXEC (@sql);
 
-        SELECT @restore_location = REPLACE(s.physical_name, REVERSE(SUBSTRING(REVERSE(s.physical_name), 1, CHARINDEX('\', REVERSE(s.physical_name))-1)), '')
+        SELECT @restore_location = REPLACE(s.physical_name, REVERSE(SUBSTRING(REVERSE(s.physical_name), 1, CHARINDEX('\', REVERSE(s.physical_name))-1)), '') -- ' added to "fix" highlighting
         FROM sys.master_files s
         WHERE file_id = 1
         AND name = @file_location_test_db_name;
